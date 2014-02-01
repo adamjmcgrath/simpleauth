@@ -179,7 +179,8 @@ class SimpleAuthHandler(object):
     params = {
       'response_type': 'code',
       'client_id': key, 
-      'redirect_uri': callback_url 
+      'redirect_uri': callback_url,
+      'access_type': 'offline',
     }
 
     if scope:
@@ -190,11 +191,11 @@ class SimpleAuthHandler(object):
       params.update(state=state)
       self.session[self.OAUTH2_CSRF_SESSION_PARAM] = state
 
-    target_url = auth_url.format(urlencode(params)) 
+    target_url = auth_url.format(urlencode(params))
     logging.debug('Redirecting user to %s', target_url)
 
-    self.redirect(target_url)      
-    
+    self.redirect(target_url)
+
   def _oauth2_callback(self, provider, access_token_url):
     """Step 2 of OAuth 2.0, whenever the user accepts or denies access."""
     error = self.request.get('error')
@@ -212,7 +213,7 @@ class SimpleAuthHandler(object):
       if not self._validate_csrf_token(_expected, _actual):
         raise InvalidCSRFTokenError(
           '[%s] vs [%s]' % (_expected, _actual), provider)
-      
+
     payload = {
       'code': code,
       'client_id': client_id,
@@ -220,10 +221,10 @@ class SimpleAuthHandler(object):
       'redirect_uri': callback_url,
       'grant_type': 'authorization_code'
     }
-    
+
     resp = urlfetch.fetch(
-      url=access_token_url, 
-      payload=urlencode(payload), 
+      url=access_token_url,
+      payload=urlencode(payload),
       method=urlfetch.POST,
       headers={'Content-Type': 'application/x-www-form-urlencoded'}
     )
@@ -234,7 +235,7 @@ class SimpleAuthHandler(object):
     auth_info = _parser(resp.content)
     user_data = _fetcher(auth_info, key=client_id, secret=client_secret)
     return (user_data, auth_info)
-    
+
   def _oauth1_init(self, provider, auth_urls):
     """Initiates OAuth 1.0 dance"""
     key, secret = self._get_consumer_info_for(provider)
